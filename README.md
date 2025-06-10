@@ -150,7 +150,6 @@ considere fazer uma doação através do botão disponível na interface.
 - **Email:** [eniodind@protonmail.com](mailto:eniodind@protonmail.com)
 - **LinkedIn:** [Enio Rocha](https://www.linkedin.com/in/enio-rocha-138a01225?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app)
 - **WhatsApp:** [+55 34 99237-4363](https://wa.me/5534992374363)
-- **Repositório do Projeto:** [Pochete 2.0 no GitHub](https://github.com/enioxt/Pochete2.0)
 
 ---
 Desenvolvido por Enio Rocha
