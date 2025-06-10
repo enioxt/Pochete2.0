@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+python_embed/
+
+# Inno Setup
+output/
+*.tmp
+
+# Arquivos de ambiente virtual (opcional, mas bom ter)
+.env
+.venv
+env/
+venv/
+
+# Arquivos de sistema operacional
+.DS_Store
+Thumbs.db
