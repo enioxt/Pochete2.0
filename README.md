@@ -16,9 +16,7 @@ O Pochete 2.0 é uma ferramenta com interface gráfica para processamento de ví
 ## INSTALAÇÃO
 Para instalar o Pochete 2.0 no Windows:
 1. Baixe o arquivo do instalador "Instalador_Pochete2.0.exe".
-   Você pode encontrá-lo na seção "Releases" do repositório do projeto no GitHub:
-   [https://github.com/enioxt/Pochete2.0/releases/](https://github.com/enioxt/Pochete2.0/releases/)
-   (Se o link direto para o arquivo .exe estiver disponível na página principal do repositório, você também pode usá-lo).
+   Você pode encontrá-lo na seção "Releases" deste repositório.
 2. Execute o arquivo "Instalador_Pochete2.0.exe" que você baixou.
 3. Siga as instruções apresentadas pelo assistente de instalação.
    - O instalador verificará automaticamente se o Python e as dependências necessárias (Tkinter, Colorama, TQDM) já estão presentes em seu sistema.
@@ -33,95 +31,63 @@ Para instalar o Pochete 2.0 no Windows:
 ### 2. UTILIZAÇÃO DA INTERFACE:
 - Selecione o vídeo de origem clicando no botão "Selecionar Vídeo"
 - Escolha o modo de processamento (vídeo completo ou segmento específico)
-- Se escolher um segmento, informe os tempos de início e fim
-- Defina o tamanho máximo por parte (em MB) no campo apropriado
-- Clique em "Processar Vídeo" para iniciar o processamento
-- Acompanhe o progresso através da barra de progresso
+- Se escolher um segmento, defina o tempo de início e fim
+- Defina o nome do projeto (será usado para criar a pasta de saída)
+- Defina o tamanho máximo por parte (em MB)
+- Clique em "Iniciar Processamento"
 
-### 3. RESULTADOS:
-- Os vídeos processados serão salvos na pasta "saida" dentro da pasta de instalação
-- Cada vídeo terá sua própria pasta com o nome do projeto
-- Se o vídeo for dividido em partes, cada parte terá numeração sequencial
-- Ao finalizar, o aplicativo mostrará uma mensagem de conclusão
+### 3. MODOS DE PROCESSAMENTO:
+- **Vídeo Completo:** Processa o vídeo inteiro. Se o tamanho final exceder o "Tamanho Máximo por Parte", ele será dividido.
+- **Segmento Específico:** Extrai e processa apenas o trecho do vídeo entre o "Tempo de Início" e "Tempo de Fim" especificados. Se o segmento extraído exceder o "Tamanho Máximo por Parte", ele também será dividido.
 
-## MODOS DE PROCESSAMENTO
+### 4. ACOMPANHAMENTO:
+- O progresso será exibido na área de logs da interface
+- Ao final, uma mensagem indicará a conclusão e o local dos arquivos processados (geralmente em `Documentos\Pochete2.0\ProcessadorVideos\saida\[Nome do Projeto]\`)
 
-### 1. PROCESSAMENTO DE VÍDEO COMPLETO
-Este modo é ideal para situações como:
-- Quando você precisa fazer upload de um vídeo grande em plataformas que limitam o tamanho do arquivo
-- Para compartilhar vídeos extensos via e-mail ou mensageiros que têm restrições de tamanho
-- Para armazenar vídeos em dispositivos com sistemas de arquivos que limitam o tamanho máximo de arquivo
-- Para facilitar o download em conexões instáveis, permitindo baixar partes separadamente
-- Para distribuir conteúdo em mídias físicas com capacidade limitada (pen drives, DVDs)
+### 5. DICAS:
+- **Formato de Tempo:** Use `HH:MM:SS` (ex: `00:01:30` para 1 minuto e 30 segundos).
+- **Nome do Projeto:** Evite caracteres especiais para garantir a compatibilidade com nomes de pastas.
+- **Espaço em Disco:** Certifique-se de ter espaço suficiente para os vídeos processados.
 
-### 2. EXTRAÇÃO DE SEGMENTOS
-Este modo é perfeito para:
-- Extrair apenas as partes relevantes de uma gravação longa
-- Compartilhar momentos específicos de um vídeo sem enviar o arquivo completo
-- Criar clipes curtos para redes sociais ou apresentações
-- Remover seções desnecessárias ou indesejadas de um vídeo
-- Dividir um vídeo longo em capítulos ou seções temáticas
+## COMO FUNCIONA O PYTHON E AS DEPENDÊNCIAS
+O Pochete 2.0 é desenvolvido em Python e utiliza algumas bibliotecas externas para funcionar. O instalador foi projetado para facilitar ao máximo a configuração para o usuário:
 
-## DICAS
-- Para extrair um segmento, você pode informar o tempo nos formatos:
-  * Segundos (ex: 90)
-  * MM:SS (ex: 01:30)
-  * HH:MM:SS (ex: 00:01:30)
-- O programa adiciona automaticamente uma margem de segurança nas extrações
-- Arquivos temporários são limpos automaticamente após o processamento
-- Você pode verificar informações sobre o vídeo original na interface
-- Para vídeos muito grandes, recomenda-se definir um tamanho máximo por parte adequado ao meio de compartilhamento
-- A qualidade do vídeo é preservada durante o processamento, mantendo as características do original
+1.  **Verificação do Python:**
+    *   O instalador primeiro verifica se o Python (versão 3.6 ou superior) já está instalado e acessível no PATH do sistema.
+    *   Se uma versão compatível do Python for encontrada, o instalador a utilizará.
+    *   Se o Python não for encontrado, ou se uma versão incompatível for detectada, o instalador oferecerá a opção de baixar e instalar uma versão recente do Python 3.x (versão *embeddable* que não interfere com outras instalações de Python no sistema, ou uma instalação completa se o usuário preferir e o instalador for configurado para tal).
 
-## SUPORTE
-Em caso de problemas, verifique:
-- Se o Python está corretamente instalado (execute o arquivo "instalar_dependencias.bat")
-- Se os vídeos estão em formatos compatíveis (MP4, AVI, MOV, etc.)
-- Se há espaço suficiente no disco para os arquivos processados
-- Se o FFmpeg e FFprobe estão corretamente instalados
+2.  **Verificação das Bibliotecas (Tkinter, TQDM, Colorama):**
+    *   **Tkinter:** Geralmente vem incluído na instalação padrão do Python e é usado para a interface gráfica.
+    *   **TQDM:** Usado para exibir barras de progresso no console (útil durante o desenvolvimento e para logs detalhados).
+    *   **Colorama:** Usado para adicionar cores aos textos no console (também mais relevante para desenvolvimento).
+    *   O instalador verificará se essas bibliotecas estão disponíveis para o Python que será utilizado.
+    *   Caso não estejam, e se o Python estiver sendo gerenciado pelo instalador (ou seja, se o usuário permitiu a instalação/configuração do Python pelo instalador), essas dependências podem ser instaladas automaticamente usando o `pip` (gerenciador de pacotes do Python).
 
-## NOTA SOBRE PYTHON E DEPENDÊNCIAS
-O Pochete 2.0 utiliza Python e algumas bibliotecas adicionais para funcionar.
+3.  **FFmpeg e FFprobe:**
+    *   Essas são ferramentas essenciais para manipulação de vídeo.
+    *   O instalador do Pochete 2.0 **inclui** os executáveis `ffmpeg.exe` e `ffprobe.exe` e os copia para a pasta de instalação do aplicativo. O aplicativo é configurado para usar esses executáveis locais, não dependendo de uma instalação separada do FFmpeg no sistema do usuário.
 
-**O que é Python e por que é necessário?**
-Python é uma linguagem de programação popular, segura e versátil, usada por muitos aplicativos,
-incluindo o Pochete 2.0. Ele fornece as ferramentas básicas para que o programa
-funcione corretamente. Se o Python não estiver instalado em seu sistema, o instalador
-do Pochete 2.0 oferecerá a opção de baixá-lo e instalá-lo automaticamente.
+O objetivo é que o usuário final precise apenas executar o instalador e seguir os passos, sem se preocupar com a instalação manual de cada componente.
 
-**É seguro instalar o Python?**
-Sim, o Python é um software de código aberto amplamente utilizado e seguro.
-O instalador do Pochete 2.0, se necessário, fará o download do Python diretamente
-do site oficial (python.org), garantindo que você obtenha uma versão autêntica e segura.
+## COMO COMPILAR O INSTALADOR (PARA DESENVOLVEDORES)
+Se você é um desenvolvedor e deseja compilar o instalador `Instalador_Pochete2.0.exe` a partir do script Inno Setup (`pochete_instalador_completo.iss`), siga estes passos:
 
-**O que são as dependências (Tkinter, Colorama, TQDM)?**
-São bibliotecas (conjuntos de código) que adicionam funcionalidades específicas ao
-Pochete 2.0:
-- Tkinter: Utilizada para criar a interface gráfica do programa.
-- Colorama: Permite o uso de cores em mensagens no console (usado internamente).
-- TQDM: Usada para exibir barras de progresso durante o processamento dos vídeos.
-Essas dependências também são instaladas automaticamente pelo instalador se não
-estiverem presentes e a opção de instalação for selecionada.
-
-## COMPILANDO O INSTALADOR (PARA DESENVOLVEDORES)
-
-Se você deseja modificar o instalador ou compilá-lo a partir do código-fonte, siga estas etapas:
-
-### Requisitos para Compilação:
-1.  **Inno Setup:** Você precisará ter o Inno Setup instalado. O Inno Setup é uma ferramenta gratuita para criar instaladores para programas Windows.
-    *   **Download:** Você pode baixá-lo em [jrsoftware.org](https://jrsoftware.org/isinfo.php).
-    *   **Instalação:** Siga as instruções do instalador do próprio Inno Setup.
-
-### Passos para Compilar:
-1.  **Clone o Repositório:** Certifique-se de ter uma cópia local de todos os arquivos do projeto Pochete 2.0, incluindo:
-    *   `pochete_instalador_completo.iss` (o script principal do Inno Setup)
+### Pré-requisitos:
+*   **Inno Setup:** Você precisa ter o [Inno Setup](https://jrsoftware.org/isinfo.php) instalado em seu sistema.
+*   **Arquivos Fonte do Projeto:** Certifique-se de ter todos os arquivos fonte do Pochete 2.0 em uma pasta no seu computador. Isso inclui:
     *   `gui_processador_videos.py`
-    *   A pasta `ffmpeg/` com `ffmpeg.exe` e `ffprobe.exe`
+    *   `pochete_instalador_completo.iss` (o script do Inno Setup)
     *   `LEIAME.TXT`
     *   `CHANGELOG.md`
     *   `requirements.txt`
-    *   `favicon.ico`
+    *   A pasta `ffmpeg/` contendo `ffmpeg.exe` e `ffprobe.exe`
+    *   O arquivo de ícone, por exemplo, `favicon.ico`
     Todos esses arquivos devem estar na mesma estrutura de pastas que no repositório.
+
+### Passos para Compilar:
+1.  **Clone o Repositório (se ainda não o fez):**
+    *   Obtenha a versão mais recente do código-fonte.
 
 2.  **Abra o Script no Inno Setup:**
     *   Inicie o "Inno Setup Compiler".
@@ -142,15 +108,29 @@ Se você deseja modificar o instalador ou compilá-lo a partir do código-fonte,
 *   Qualquer modificação nos arquivos fonte (como `gui_processador_videos.py`) exigirá uma nova compilação do instalador para que as alterações sejam incluídas.
 
 ## DOAÇÕES
-Se você gosta deste aplicativo e deseja apoiar seu desenvolvimento,
-considere fazer uma doação através do botão disponível na interface.
+Se você gosta deste aplicativo e deseja apoiar seu desenvolvimento, considere fazer uma doação. Sua contribuição ajuda a manter o projeto ativo e em constante evolução!
+
+Você pode doar através dos seguintes canais:
+- **PIX (CPF - Enio Rocha):** `10689169663`
+- **Bitcoin (BTC):** `bc1qua6c3dqka9kqt73a3xgfperl6jmffsefcr0g7n`
+- **Solana (SOL):** `BaT6BPZo5bGvFTf5vPZyoa2YAw3QUi55e19pR6K9bBtz`
+- **ETH/BASE/ARB/EVM:** `0x12e69a0D9571676F3e95007b99Ce02B207adB4b0`
+
+Alternativamente, o botão "💚 Apoie o Projeto" na interface do aplicativo também exibe estas opções.
+
+## 💰 TOKEN DO PROJETO E INTEGRAÇÃO BLOCKCHAIN
+O Pochete 2.0, assim como outros projetos do ecossistema EGOS, explora a integração com tecnologias blockchain para promover transparência e novas formas de interação. O token $ETHIK faz parte desta visão.
+
+O token $ETHIK está disponível nas seguintes redes:
+- **HyperLiquid:** `0xEFC3c015E0CD02246e6b6CD5faA89e96a71Ec1E4`
+- **Solana:** `DsLmsjwXschqEe5EnHFvv1oi5BNGoQin6VDN81Ufpump`
+- **Base:** `0x633b346b85c4877ace4d47f7aa72c2a092136cb5`
 
 ## CONTATO
 - **Criador:** Enio Rocha
 - **Email:** [eniodind@protonmail.com](mailto:eniodind@protonmail.com)
 - **LinkedIn:** [Enio Rocha](https://www.linkedin.com/in/enio-rocha-138a01225?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app)
 - **WhatsApp:** [+55 34 99237-4363](https://wa.me/5534992374363)
-- **Repositório do Projeto:** [Pochete 2.0 no GitHub](https://github.com/enioxt/Pochete2.0)
 
 ---
 Desenvolvido por Enio Rocha
