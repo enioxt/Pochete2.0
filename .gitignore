@@ -1,19 +1,20 @@
-# Python
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
-python_embed/
 
-# Inno Setup
-output/
-*.tmp
+# PyInstaller
+#  Usually these files are created by the PyInstaller spec file
+*.spec
+build/
+dist/
 
-# Arquivos de ambiente virtual (opcional, mas bom ter)
+# Virtual Environments
 .env
 .venv
-env/
 venv/
+env/
 
-# Arquivos de sistema operacional
-.DS_Store
-Thumbs.db
+# IDE / Editor specific
+.vscode/
+.idea/
