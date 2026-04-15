@@ -1,0 +1,5 @@
+# .windsurfrules — video-editor
+# EGOS-KERNEL-PROPAGATED: 2026-04-15
+# Extends: EGOS Kernel (~/.claude/CLAUDE.md) — kernel wins on conflict.
+## Kernel Rules: no force-push main · no secret logging · no git add -A in agents
+## Repo: video-editor

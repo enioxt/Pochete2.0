@@ -1,0 +1,9 @@
+# Large binary assets (serve via VPS — download separately)
+ffmpeg-core.wasm
+
+# Logs
+server.log
+*.log
+
+# Node
+node_modules/
