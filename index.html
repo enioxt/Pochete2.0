@@ -447,7 +447,30 @@
   .mot-info  { min-width: 0; flex: 1; }
   .mot-title { font-size: .8rem; color: #ddd; font-weight: 500; }
   .mot-time  { font-size: .72rem; color: #777; margin-top: 2px; }
-  .mot-score { font-size: .7rem; color: #f59e0b; flex-shrink: 0; }
+  .mot-score {
+    font-size: .7rem; color: #f59e0b; flex-shrink: 0;
+    position: relative; cursor: help;
+  }
+  .mot-score::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: calc(100% + 6px);
+    right: 0;
+    width: 220px;
+    background: #1e1e1e;
+    border: 1px solid #333;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: .72rem;
+    color: #ccc;
+    line-height: 1.45;
+    white-space: normal;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .15s;
+    z-index: 99;
+  }
+  .mot-score:hover::after { opacity: 1; }
   .mot-cut-btn {
     padding: 4px 10px; border-radius: 4px;
     border: 1px solid #3b82f6; background: transparent;
@@ -1462,7 +1485,7 @@ function renderMotEventList() {
         <div class="mot-title">Evento #${i+1}</div>
         <div class="mot-time">${motFmt(ev.startMs/1000)} → ${motFmt(ev.endMs/1000)} (${dur}s)</div>
       </div>
-      <div class="mot-score">${(ev.peakScore*100).toFixed(1)}%</div>
+      <div class="mot-score" data-tip="Intensidade de movimento: % de pixels que mudaram significativamente no frame de pico deste evento. Valores altos = muita ação na cena. Calculado comparando pixels consecutivos com intervalo de 0,5s.">${(ev.peakScore*100).toFixed(1)}%</div>
       <button class="mot-cut-btn" title="Enviar para aba Cortar">✂️ Cortar</button>
     `;
     card.querySelector('.mot-cut-btn').addEventListener('click', e => {
