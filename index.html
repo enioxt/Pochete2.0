@@ -1,0 +1,1670 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cortador de Vídeo</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23111'/%3E%3C!-- film strip left --%3E%3Crect x='4' y='14' width='6' height='36' rx='2' fill='%23e50914'/%3E%3Crect x='5' y='17' width='4' height='4' rx='1' fill='%23111'/%3E%3Crect x='5' y='25' width='4' height='4' rx='1' fill='%23111'/%3E%3Crect x='5' y='33' width='4' height='4' rx='1' fill='%23111'/%3E%3Crect x='5' y='41' width='4' height='4' rx='1' fill='%23111'/%3E%3C!-- film strip right --%3E%3Crect x='54' y='14' width='6' height='36' rx='2' fill='%23e50914'/%3E%3Crect x='55' y='17' width='4' height='4' rx='1' fill='%23111'/%3E%3Crect x='55' y='25' width='4' height='4' rx='1' fill='%23111'/%3E%3Crect x='55' y='33' width='4' height='4' rx='1' fill='%23111'/%3E%3Crect x='55' y='41' width='4' height='4' rx='1' fill='%23111'/%3E%3C!-- scissors body --%3E%3Ccircle cx='22' cy='42' r='5' fill='none' stroke='%23f5f5f5' stroke-width='2.5'/%3E%3Ccircle cx='42' cy='42' r='5' fill='none' stroke='%23f5f5f5' stroke-width='2.5'/%3E%3Cline x1='25.5' y1='39.5' x2='32' y2='32' stroke='%23f5f5f5' stroke-width='2.5' stroke-linecap='round'/%3E%3Cline x1='38.5' y1='39.5' x2='32' y2='32' stroke='%23f5f5f5' stroke-width='2.5' stroke-linecap='round'/%3E%3Cline x1='25.5' y1='44.5' x2='32' y2='32' stroke='%23f5f5f5' stroke-width='2' stroke-linecap='round' opacity='0.4'/%3E%3Cline x1='38.5' y1='44.5' x2='32' y2='32' stroke='%23f5f5f5' stroke-width='2' stroke-linecap='round' opacity='0.4'/%3E%3C!-- cut line --%3E%3Cline x1='32' y1='14' x2='32' y2='30' stroke='%23e50914' stroke-width='2' stroke-dasharray='3 2' stroke-linecap='round'/%3E%3C/svg%3E">
+<script src="ffmpeg.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #111;
+    color: #e5e5e5;
+    font-family: system-ui, sans-serif;
+    font-size: 14px;
+    min-height: 100vh;
+  }
+
+  .app {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 24px 16px 48px;
+  }
+
+  .app-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 6px;
+  }
+  .app-header-icon {
+    width: 42px; height: 42px;
+    background: linear-gradient(135deg, #e50914 0%, #b00710 100%);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(229,9,20,.35);
+  }
+  h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 2px;
+    letter-spacing: -.3px;
+  }
+  .subtitle { color: #555; font-size: 12px; margin-bottom: 28px; margin-top: 2px; }
+
+  /* Cards */
+  .card {
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    margin-bottom: 14px;
+  }
+
+  /* Upload */
+  .upload-area {
+    background: #141414;
+    border: 1px solid #2a2a2a;
+    border-radius: 10px;
+    padding: 28px 24px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    cursor: pointer;
+    transition: border-color .2s, background .2s;
+  }
+  .upload-area:hover { border-color: #3b82f6; background: #161a22; }
+  .upload-area input { display: none; }
+  .upload-icon-wrap {
+    width: 52px; height: 52px;
+    background: #1e1e1e;
+    border: 1px solid #2e2e2e;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+    flex-shrink: 0;
+  }
+  .upload-text strong { color: #e5e5e5; font-size: 14px; display: block; margin-bottom: 4px; }
+  .upload-text span { color: #555; font-size: 12px; }
+  .upload-area p { display: none; }
+  .upload-area .icon { display: none; }
+
+  /* Video player */
+  #video-section { display: none; }
+
+  .video-wrap {
+    background: #000;
+    border-radius: 8px;
+    overflow: hidden;
+    text-align: center;
+    max-height: 380px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .video-wrap video {
+    max-width: 100%;
+    max-height: 380px;
+    width: auto;
+    height: auto;
+    display: block;
+  }
+
+  /* Load progress */
+  .load-status {
+    margin-top: 10px;
+    font-size: 12px;
+    color: #555;
+  }
+  .load-status-bar {
+    height: 3px;
+    background: #222;
+    border-radius: 2px;
+    margin-top: 5px;
+    overflow: hidden;
+  }
+  .load-status-fill {
+    height: 100%;
+    background: #3b82f6;
+    border-radius: 2px;
+    transition: width .15s;
+    width: 0%;
+  }
+  .load-status-fill.green { background: #22c55e; }
+  .file-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    font-size: 12px;
+    color: #555;
+    flex-wrap: wrap;
+  }
+  .file-info span { background: #1e1e1e; border: 1px solid #2a2a2a; border-radius: 4px; padding: 2px 8px; }
+  .file-info .btn-reset {
+    margin-left: auto;
+    background: none;
+    border: 1px solid #333;
+    color: #666;
+    padding: 2px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+  }
+  .file-info .btn-reset:hover { border-color: #e50914; color: #e50914; }
+
+  .time-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 10px;
+    font-family: monospace;
+    font-size: 13px;
+    color: #888;
+  }
+  .time-bar .cur { color: #3b82f6; font-weight: 700; }
+  .time-bar .total { color: #ccc; }
+  .time-bar button {
+    margin-left: auto;
+    background: #2a2a2a;
+    border: 1px solid #333;
+    color: #ccc;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+  }
+  .time-bar button:hover { background: #333; }
+
+  /* Rotation row */
+  .rotation-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #1e1e1e;
+  }
+  .rotation-row label { font-size: 12px; color: #555; white-space: nowrap; }
+  .rotation-row select {
+    background: #1a1a1a; border: 1px solid #2a2a2a; color: #ccc;
+    border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer;
+  }
+  .rotation-row select:focus { outline: none; border-color: #3b82f6; }
+  .rotation-badge {
+    margin-left: auto;
+    font-size: 11px;
+    color: #f59e0b;
+    background: #1c1a0e;
+    border: 1px solid #3d3000;
+    padding: 2px 8px;
+    border-radius: 4px;
+    display: none;
+  }
+  .rotation-badge.visible { display: block; }
+
+  /* Timeline */
+  .timeline {
+    position: relative;
+    height: 48px;
+    background: #222;
+    border-radius: 6px;
+    overflow: hidden;
+    cursor: pointer;
+    margin: 14px 0 6px;
+    user-select: none;
+  }
+  .tl-selection {
+    position: absolute;
+    height: 100%;
+    background: rgba(59,130,246,.25);
+    border-left: 3px solid #3b82f6;
+    border-right: 3px solid #3b82f6;
+    top: 0;
+    pointer-events: none;
+  }
+  .tl-cursor {
+    position: absolute;
+    width: 2px;
+    height: 100%;
+    background: #ef4444;
+    top: 0;
+    pointer-events: none;
+    z-index: 5;
+  }
+  .tl-handle {
+    position: absolute;
+    width: 10px;
+    height: 100%;
+    background: #3b82f6;
+    top: 0;
+    cursor: ew-resize;
+    z-index: 10;
+  }
+  .tl-handle:hover { background: #60a5fa; }
+  .tl-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #555;
+  }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid #222;
+    padding-bottom: 0;
+  }
+  .tab-btn {
+    background: none;
+    border: none;
+    color: #666;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: all .15s;
+  }
+  .tab-btn:hover { color: #ccc; }
+  .tab-btn.active { color: #3b82f6; border-bottom-color: #3b82f6; }
+  .tab-pane { display: none; }
+  .tab-pane.active { display: block; }
+
+  /* Form rows */
+  .row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+  .field { flex: 1; min-width: 140px; }
+  .field label { display: block; color: #888; font-size: 12px; margin-bottom: 6px; }
+
+  /* Time input */
+  .time-input {
+    width: 100%;
+    background: #222;
+    border: 1px solid #333;
+    border-radius: 6px;
+    color: #fff;
+    font-family: monospace;
+    font-size: 20px;
+    padding: 10px 12px;
+    text-align: center;
+    letter-spacing: 2px;
+    outline: none;
+    cursor: text;
+  }
+  .time-input:focus { border-color: #3b82f6; }
+  .field .hint { font-size: 11px; color: #555; margin-top: 4px; }
+
+  /* Regular input */
+  .input {
+    width: 100%;
+    background: #222;
+    border: 1px solid #333;
+    border-radius: 6px;
+    color: #fff;
+    font-size: 14px;
+    padding: 8px 10px;
+    outline: none;
+  }
+  .input:focus { border-color: #3b82f6; }
+
+  select.input option { background: #222; }
+
+  /* Presets */
+  .presets { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .btn-preset {
+    background: #222;
+    border: 1px solid #333;
+    color: #aaa;
+    padding: 5px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 12px;
+  }
+  .btn-preset:hover { background: #2a2a2a; color: #fff; }
+
+  /* Buttons */
+  .btn {
+    display: inline-block;
+    padding: 10px 20px;
+    border-radius: 7px;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+    text-decoration: none;
+    transition: opacity .15s;
+  }
+  .btn:disabled { opacity: .4; cursor: not-allowed; }
+  .btn-primary { background: #3b82f6; color: #fff; }
+  .btn-primary:hover:not(:disabled) { background: #2563eb; }
+  .btn-success { background: #22c55e; color: #fff; }
+  .btn-success:hover:not(:disabled) { background: #16a34a; }
+  .btn-block { display: block; width: 100%; }
+
+  /* Progress */
+  .progress-wrap { margin-top: 14px; }
+  .progress-header { display: flex; justify-content: space-between; font-size: 12px; color: #888; margin-bottom: 6px; }
+  .progress-bar-bg { background: #2a2a2a; border-radius: 4px; height: 8px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; background: linear-gradient(90deg,#3b82f6,#06b6d4); border-radius: 4px; transition: width .3s; }
+  .log-box {
+    margin-top: 8px;
+    background: #0a0a0a;
+    border: 1px solid #222;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-family: monospace;
+    font-size: 11px;
+    color: #555;
+    height: 80px;
+    overflow-y: auto;
+  }
+
+  /* Download */
+  .download-box { margin-top: 14px; }
+
+  /* Crop area */
+  .crop-wrap {
+    position: relative;
+    display: inline-block;
+    max-width: 100%;
+    cursor: crosshair;
+  }
+  #crop-canvas {
+    display: block;
+    max-width: 100%;
+    border-radius: 6px;
+  }
+  #crop-overlay {
+    position: absolute;
+    border: 2px dashed #3b82f6;
+    background: rgba(59,130,246,.18);
+    pointer-events: none;
+    display: none;
+  }
+  .crop-actions { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* Frame grid */
+  .frame-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 8px;
+    max-height: 360px;
+    overflow-y: auto;
+    margin-top: 12px;
+  }
+  .frame-item {
+    position: relative;
+    border-radius: 5px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid transparent;
+  }
+  .frame-item:hover { border-color: #3b82f6; }
+  .frame-item img { display: block; width: 100%; height: auto; }
+  .frame-label {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: rgba(0,0,0,.75);
+    color: #fff;
+    font-family: monospace;
+    font-size: 10px;
+    padding: 3px 5px;
+  }
+
+  /* Crop controls */
+  .crop-nav { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .btn-nav {
+    background: #222;
+    border: 1px solid #333;
+    color: #ccc;
+    padding: 6px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 12px;
+  }
+  .btn-nav:hover { background: #2a2a2a; }
+
+  .hidden { display: none !important; }
+  .mt8 { margin-top: 8px; }
+  .mt14 { margin-top: 14px; }
+
+  /* ── Motion detection tab ── */
+  #mot-progress { margin: 16px 0; }
+  #mot-prog-bar-bg { height: 6px; background: #1a1a1a; border-radius: 3px; overflow: hidden; }
+  #mot-prog-bar    { height: 100%; width: 0%; background: #f59e0b; transition: width .2s; border-radius: 3px; }
+  #mot-prog-label  { font-size: 12px; color: #666; margin-bottom: 6px; }
+  #mot-prog-pct    { font-size: 11px; color: #555; margin-top: 4px; }
+
+  #mot-timeline {
+    width: 100%; height: 28px;
+    background: #1a1a1a; border-radius: 5px;
+    position: relative; overflow: hidden;
+    cursor: pointer; margin: 12px 0 16px;
+  }
+  .mot-marker {
+    position: absolute; top: 4px; height: 20px; min-width: 4px;
+    border-radius: 2px; background: #f59e0b; opacity: .8; cursor: pointer;
+    transition: opacity .15s;
+  }
+  .mot-marker:hover, .mot-marker.active { opacity: 1; outline: 2px solid #fff; z-index: 2; }
+
+  #mot-event-list { max-height: 340px; overflow-y: auto; margin-top: 8px; }
+  .mot-card {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px; border-radius: 6px; cursor: pointer;
+    transition: background .15s; border: 1px solid transparent;
+  }
+  .mot-card:hover  { background: #1e1e1e; }
+  .mot-card.active { background: #1a2a40; border-color: #f59e0b; }
+  .mot-thumb {
+    width: 64px; height: 40px; object-fit: cover;
+    border-radius: 4px; background: #111; flex-shrink: 0;
+  }
+  .mot-thumb-ph {
+    width: 64px; height: 40px; border-radius: 4px;
+    background: #222; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .7rem; color: #555;
+  }
+  .mot-info  { min-width: 0; flex: 1; }
+  .mot-title { font-size: .8rem; color: #ddd; font-weight: 500; }
+  .mot-time  { font-size: .72rem; color: #777; margin-top: 2px; }
+  .mot-score { font-size: .7rem; color: #f59e0b; flex-shrink: 0; }
+  .mot-cut-btn {
+    padding: 4px 10px; border-radius: 4px;
+    border: 1px solid #3b82f6; background: transparent;
+    color: #3b82f6; font-size: .72rem; cursor: pointer;
+    white-space: nowrap; flex-shrink: 0;
+    transition: background .15s;
+  }
+  .mot-cut-btn:hover { background: #1d3a6e; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="app-header">
+    <div class="app-header-icon">✂️</div>
+    <div>
+      <h1>Cortador de Vídeo</h1>
+      <p class="subtitle">Processamento 100% local — nenhum dado enviado ao servidor &nbsp;·&nbsp; <a href="https://github.com/enioxt/Pochete2.0" target="_blank" rel="noopener" style="color:#555;text-decoration:none;">GitHub ↗</a></p>
+    </div>
+  </div>
+
+  <!-- Upload -->
+  <div class="card">
+    <label class="upload-area" id="upload-label">
+      <input type="file" id="video-upload" accept="video/*">
+      <div class="upload-icon-wrap">🎬</div>
+      <div class="upload-text">
+        <strong>Clique para selecionar um vídeo</strong>
+        <span>MP4, AVI, MOV, MKV — arraste ou clique aqui</span>
+      </div>
+    </label>
+    <!-- Progresso de carregamento -->
+    <div id="load-status" class="load-status" style="display:none">
+      <span id="load-status-text">Lendo arquivo…</span>
+      <div class="load-status-bar"><div id="load-status-fill" class="load-status-fill"></div></div>
+    </div>
+    <!-- Info do arquivo -->
+    <div id="file-info" class="file-info" style="display:none">
+      <span id="fi-name"></span>
+      <span id="fi-size"></span>
+      <span id="fi-dur"></span>
+      <button class="btn-reset" onclick="resetFile()">↩ Trocar vídeo</button>
+    </div>
+  </div>
+
+  <!-- Player + Tabs -->
+  <div id="video-section">
+
+    <div class="card">
+      <div class="video-wrap" id="video-wrap">
+        <video id="video-preview" controls preload="metadata"></video>
+      </div>
+      <div class="time-bar">
+        <span>Atual:</span>
+        <span class="cur" id="cur-time">00:00:00</span>
+        <span>/</span>
+        <span class="total" id="tot-time">00:00:00</span>
+        <button onclick="captureFrame()">📷 Capturar Quadro</button>
+      </div>
+      <div class="rotation-row">
+        <label>🔄 Rotação:</label>
+        <select id="rotation" onchange="applyRotationPreview(this.value)">
+          <option value="">Sem rotação</option>
+          <option value="1">90° Horário</option>
+          <option value="2">90° Anti-horário</option>
+          <option value="0">180°</option>
+        </select>
+        <span id="rotation-badge" class="rotation-badge">preview ao vivo</span>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab(event,'cut')">✂️ Cortar Vídeo</button>
+      <button class="tab-btn" onclick="switchTab(event,'crop')">🖼️ Recortar Área</button>
+      <button class="tab-btn" onclick="switchTab(event,'frames')">🎞️ Extrair Quadros</button>
+      <button class="tab-btn" id="mot-tab-btn" onclick="switchTab(event,'motion');initMotionTab()">🎯 Detectar Movimento</button>
+    </div>
+
+    <!-- TAB: Cortar Vídeo -->
+    <div id="tab-cut" class="tab-pane active">
+      <div class="card">
+        <div class="card-title">Definir Intervalo de Tempo</div>
+
+        <!-- Timeline visual -->
+        <div class="timeline" id="timeline">
+          <div class="tl-selection" id="tl-sel"></div>
+          <div class="tl-cursor"   id="tl-cur"></div>
+          <div class="tl-handle"   id="tl-start" style="left:0%"></div>
+          <div class="tl-handle"   id="tl-end"   style="left:100%"></div>
+        </div>
+        <div class="tl-labels"><span>Início</span><span>Arraste as alças ou clique</span><span>Fim</span></div>
+
+        <!-- Inputs de tempo -->
+        <div class="row mt8">
+          <div class="field">
+            <label>Início</label>
+            <input type="text" id="start-time" class="time-input" value="00:00:00" placeholder="00:04:00">
+            <div class="hint">Digite HH:MM:SS — ex: 00:04:00</div>
+          </div>
+          <div class="field">
+            <label>Fim</label>
+            <input type="text" id="end-time" class="time-input" value="00:00:00" placeholder="00:04:28">
+            <div class="hint">Digite HH:MM:SS — ex: 00:04:28</div>
+          </div>
+        </div>
+
+        <!-- Predefinições -->
+        <div class="presets">
+          <span style="color:#555;align-self:center;">Predefinições:</span>
+          <button class="btn-preset" onclick="setPreset(28)">Últimos 28s</button>
+          <button class="btn-preset" onclick="setPreset(60)">1 min</button>
+          <button class="btn-preset" onclick="setPreset(300)">5 min</button>
+          <button class="btn-preset" onclick="setPreset(0,0,videoDuration)">Vídeo inteiro</button>
+        </div>
+
+        <button id="process-btn" class="btn btn-primary btn-block" onclick="processVideo()">
+          Processar Corte
+        </button>
+
+        <div id="cut-progress" class="progress-wrap hidden">
+          <div class="progress-header">
+            <span id="cut-prog-text">Processando...</span>
+            <span id="cut-prog-pct">0%</span>
+          </div>
+          <div class="progress-bar-bg"><div id="cut-prog-bar" class="progress-bar-fill" style="width:0%"></div></div>
+          <div id="cut-log" class="log-box"></div>
+        </div>
+
+        <div id="cut-download" class="download-box hidden">
+          <a id="cut-dl-btn" class="btn btn-success btn-block">⬇️ Baixar Vídeo Cortado</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: Recortar Área -->
+    <div id="tab-crop" class="tab-pane">
+      <div class="card">
+        <div class="card-title">✂️ Recortar Área do Frame</div>
+
+        <div style="background:#1e3a5f;border:1px solid #2d5a8e;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#93c5fd;">
+          <strong>Como usar:</strong> pause o vídeo no player acima no momento desejado,
+          depois <strong>clique e arraste</strong> sobre a imagem abaixo para selecionar a região.
+        </div>
+
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:12px;color:#555;">
+          <span>Frame atual:</span>
+          <span id="crop-time" style="color:#3b82f6;font-family:monospace;font-size:14px;">00:00:00</span>
+          <button class="btn-nav" onclick="clearCrop()" style="margin-left:auto;">🗑 Limpar seleção</button>
+        </div>
+
+        <div class="crop-wrap" id="crop-container">
+          <canvas id="crop-canvas"></canvas>
+          <div id="crop-overlay"></div>
+        </div>
+
+        <div class="crop-actions" style="margin-top:14px;">
+          <button class="btn btn-success" id="crop-dl-btn" onclick="downloadCrop()" disabled>
+            ⬇️ Baixar Imagem da Área
+          </button>
+          <button class="btn btn-primary" id="crop-vid-btn" onclick="cropVideo()" disabled>
+            🎬 Aplicar no Vídeo inteiro
+          </button>
+        </div>
+        <p style="color:#444;font-size:11px;margin-top:8px;">
+          "Baixar Imagem" salva só o frame atual recortado como PNG.
+          "Aplicar no Vídeo" recorta essa área em todo o vídeo e baixa o resultado.
+        </p>
+
+        <div id="crop-progress" class="progress-wrap hidden">
+          <div class="progress-header">
+            <span id="crop-prog-text">Processando...</span>
+            <span id="crop-prog-pct">0%</span>
+          </div>
+          <div class="progress-bar-bg"><div id="crop-prog-bar" class="progress-bar-fill" style="width:0%"></div></div>
+        </div>
+        <div id="crop-download" class="download-box hidden">
+          <a id="crop-vid-dl" class="btn btn-success btn-block">⬇️ Baixar Vídeo Recortado</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: Extrair Quadros -->
+    <div id="tab-frames" class="tab-pane">
+      <div class="card">
+        <div class="card-title">Extrair Quadros como Imagens</div>
+        <div class="row">
+          <div class="field">
+            <label>Quadros por segundo</label>
+            <input type="number" id="fps-val" class="input" value="1" min="0.1" max="30" step="0.1">
+          </div>
+          <div class="field">
+            <label>Início (segundos)</label>
+            <input type="number" id="frames-start" class="input" value="0" min="0">
+          </div>
+          <div class="field">
+            <label>Duração (segundos, 0=tudo)</label>
+            <input type="number" id="frames-dur" class="input" value="30" min="1">
+          </div>
+        </div>
+        <button id="extract-btn" class="btn btn-primary btn-block" onclick="extractFrames()">
+          Gerar Quadros
+        </button>
+        <div id="frames-result" class="hidden">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;">
+            <span style="color:#666;font-size:12px;">Clique num quadro para baixar</span>
+            <button class="btn-nav" onclick="downloadAllFrames()">⬇️ Baixar Todos</button>
+          </div>
+          <div class="frame-grid" id="frame-grid"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: Detectar Movimento -->
+    <div id="tab-motion" class="tab-pane">
+      <div class="card">
+        <div class="card-title">Detectar Eventos de Movimento</div>
+        <p style="font-size:12px;color:#555;margin-bottom:14px;">
+          Analisa o vídeo carregado quadro a quadro e lista os trechos com movimento.
+          Clique em <strong style="color:#3b82f6">✂️ Cortar</strong> para enviar o trecho direto para a aba de corte.
+        </p>
+
+        <!-- Config row -->
+        <div class="row" style="margin-bottom:12px;">
+          <div class="field">
+            <label>Sensibilidade</label>
+            <select id="mot-sensitivity" class="input" style="padding:6px 8px;">
+              <option value="low">Baixa (menos alertas)</option>
+              <option value="mid" selected>Média</option>
+              <option value="high">Alta (mais alertas)</option>
+            </select>
+          </div>
+          <div class="field" style="align-self:flex-end;">
+            <button id="mot-start-btn" class="btn btn-primary btn-block" onclick="runMotionDetection()">
+              Analisar Vídeo
+            </button>
+          </div>
+        </div>
+
+        <!-- Progress -->
+        <div id="mot-progress" class="hidden">
+          <div id="mot-prog-label">Analisando…</div>
+          <div id="mot-prog-bar-bg"><div id="mot-prog-bar"></div></div>
+          <div id="mot-prog-pct">0%</div>
+        </div>
+
+        <!-- Results -->
+        <div id="mot-results" class="hidden">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
+            <span id="mot-count" style="font-size:13px;color:#f59e0b;font-weight:600;"></span>
+            <button class="btn-nav" onclick="runMotionDetection()" style="font-size:11px;">↩ Reanalisar</button>
+          </div>
+          <div id="mot-timeline"><div id="mot-playhead" style="position:absolute;top:0;width:2px;height:100%;background:rgba(255,255,255,.4);pointer-events:none;"></div></div>
+          <div id="mot-event-list"></div>
+        </div>
+
+        <div id="mot-empty" class="hidden" style="color:#555;font-size:13px;padding:12px 0;">
+          Nenhum movimento detectado. Tente aumentar a sensibilidade.
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /video-section -->
+
+</div><!-- /app -->
+
+<script>
+'use strict';
+
+// ─── State ───────────────────────────────────────────────────────────────────
+const { FFmpeg } = FFmpegWASM;
+let ffmpeg = null;
+let ffmpegLoaded = false;
+let file = null;
+let fileBuffer = null; // cached ArrayBuffer — evita expiração no mobile
+let vid = null;        // the <video> element
+let duration = 0;
+let startSec = 0;
+let endSec = 0;
+let extractedFrames = [];
+
+// Crop state
+let cropScale = 1;
+let cropStartX = 0, cropStartY = 0, cropEndX = 0, cropEndY = 0;
+let cropping = false, hasCrop = false;
+
+// ─── DOM refs ─────────────────────────────────────────────────────────────────
+const upload    = document.getElementById('video-upload');
+const vidSec    = document.getElementById('video-section');
+const vidEl     = document.getElementById('video-preview');
+const curEl     = document.getElementById('cur-time');
+const totEl     = document.getElementById('tot-time');
+const startInp  = document.getElementById('start-time');
+const endInp    = document.getElementById('end-time');
+const processBtn= document.getElementById('process-btn');
+const tlSel     = document.getElementById('tl-sel');
+const tlCur     = document.getElementById('tl-cur');
+const tlStart   = document.getElementById('tl-start');
+const tlEnd     = document.getElementById('tl-end');
+const timeline  = document.getElementById('timeline');
+
+// ─── Rotation preview ─────────────────────────────────────────────────────────
+function applyRotationPreview(val) {
+  const badge = document.getElementById('rotation-badge');
+  if (!vid) return;
+  const vw = vid.videoWidth || 1, vh = vid.videoHeight || 1;
+  if (val === '1') {
+    const s = Math.min(vh / vw, vw / vh);
+    vidEl.style.transform = `rotate(90deg) scale(${s.toFixed(3)})`;
+    badge.classList.add('visible');
+  } else if (val === '2') {
+    const s = Math.min(vh / vw, vw / vh);
+    vidEl.style.transform = `rotate(-90deg) scale(${s.toFixed(3)})`;
+    badge.classList.add('visible');
+  } else if (val === '0') {
+    vidEl.style.transform = 'rotate(180deg)';
+    badge.classList.add('visible');
+  } else {
+    vidEl.style.transform = 'none';
+    badge.classList.remove('visible');
+  }
+}
+
+// ─── Reset file ───────────────────────────────────────────────────────────────
+function resetFile() {
+  file = null; fileBuffer = null; vid = null; duration = 0;
+  vidEl.src = ''; vidEl.style.transform = 'none';
+  vidSec.style.display = 'none';
+  document.getElementById('file-info').style.display = 'none';
+  document.getElementById('load-status').style.display = 'none';
+  document.getElementById('rotation').value = '';
+  document.getElementById('rotation-badge').classList.remove('visible');
+  upload.value = '';
+}
+
+// ─── Upload ───────────────────────────────────────────────────────────────────
+upload.addEventListener('change', e => {
+  file = e.target.files[0];
+  if (!file) return;
+
+  // Mostrar barra de progresso de leitura
+  const loadStatus = document.getElementById('load-status');
+  const loadFill   = document.getElementById('load-status-fill');
+  const loadText   = document.getElementById('load-status-text');
+  const fileInfoEl = document.getElementById('file-info');
+  loadStatus.style.display = 'block';
+  fileInfoEl.style.display = 'none';
+  loadFill.classList.remove('green');
+  loadFill.style.width = '0%';
+  loadText.textContent = 'Lendo arquivo…';
+
+  const sizeMB = (file.size / 1048576).toFixed(1);
+  document.getElementById('fi-name').textContent = file.name;
+  document.getElementById('fi-size').textContent = sizeMB + ' MB';
+
+  // FileReader com progresso real
+  const reader = new FileReader();
+  reader.onprogress = ev => {
+    if (ev.lengthComputable) {
+      const pct = Math.round(ev.loaded / ev.total * 90);
+      loadFill.style.width = pct + '%';
+      loadText.textContent = `Lendo arquivo… ${pct}%`;
+    }
+  };
+  reader.onload = ev => {
+    fileBuffer = ev.target.result;
+    loadFill.style.width = '95%';
+    loadText.textContent = 'Carregando vídeo…';
+
+    const url = URL.createObjectURL(file);
+    vidEl.src = url;
+    vid = vidEl;
+    vidSec.style.display = 'block';
+
+    // Desativa controles até metadados carregarem
+    document.getElementById('process-btn').disabled = true;
+
+    vid.addEventListener('loadedmetadata', () => {
+      duration = vid.duration;
+      startSec = 0; endSec = duration;
+      totEl.textContent = fmt(duration);
+      startInp.value = fmt(0);
+      endInp.value = fmt(duration);
+      syncDigits(startInp, 0);
+      syncDigits(endInp, duration);
+      updateTimeline();
+      document.getElementById('fi-dur').textContent = fmt(duration);
+      fileInfoEl.style.display = 'flex';
+    }, { once: true });
+
+    vid.addEventListener('canplay', () => {
+      loadFill.style.width = '100%';
+      loadFill.classList.add('green');
+      loadText.textContent = '✅ Vídeo pronto';
+      document.getElementById('process-btn').disabled = false;
+      setTimeout(() => { loadStatus.style.display = 'none'; }, 1500);
+    }, { once: true });
+  };
+  reader.onerror = () => { loadText.textContent = '❌ Erro ao ler arquivo'; };
+  reader.readAsArrayBuffer(file);
+});
+
+
+
+// ─── Drag-over upload ─────────────────────────────────────────────────────────
+const uploadLabel = document.getElementById('upload-label');
+uploadLabel.addEventListener('dragover', e => { e.preventDefault(); uploadLabel.style.borderColor='#3b82f6'; });
+uploadLabel.addEventListener('dragleave', () => { uploadLabel.style.borderColor='#333'; });
+uploadLabel.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadLabel.style.borderColor = '#333';
+  const f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('video/')) { upload.files = e.dataTransfer.files; file = f; upload.dispatchEvent(new Event('change')); }
+});
+
+// ─── Time format ──────────────────────────────────────────────────────────────
+function fmt(sec) {
+  if (!sec || isNaN(sec)) return '00:00:00';
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = Math.floor(sec % 60);
+  return `${pad(h)}:${pad(m)}:${pad(s)}`;
+}
+function pad(n) { return String(n).padStart(2, '0'); }
+
+function parseFmt(str) {
+  const p = str.split(':').map(Number);
+  if (p.length === 3) return p[0]*3600 + p[1]*60 + p[2];
+  if (p.length === 2) return p[0]*60 + p[1];
+  return p[0] || 0;
+}
+
+// ─── Time input — padrão normal ───────────────────────────────────────────────
+// Usuário digita livremente. Ao sair do campo (blur) normaliza para HH:MM:SS.
+// Aceita: "428" → "00:04:28" | "4:28" → "00:04:28" | "1:30:00" → "01:30:00"
+
+function normalizeTimeValue(str) {
+  // Remove tudo exceto dígitos e ':'
+  str = str.trim().replace(/[^0-9:]/g, '');
+  if (!str) return '00:00:00';
+
+  const parts = str.split(':');
+  let h = 0, m = 0, s = 0;
+
+  if (parts.length === 1) {
+    // Só dígitos — trata como MMSS ou SS
+    const digits = parts[0].padStart(6, '0').slice(-6);
+    h = parseInt(digits.slice(0, 2));
+    m = parseInt(digits.slice(2, 4));
+    s = parseInt(digits.slice(4, 6));
+  } else if (parts.length === 2) {
+    // MM:SS
+    m = parseInt(parts[0]) || 0;
+    s = parseInt(parts[1]) || 0;
+  } else {
+    // HH:MM:SS
+    h = parseInt(parts[0]) || 0;
+    m = parseInt(parts[1]) || 0;
+    s = parseInt(parts[2]) || 0;
+  }
+
+  // Normaliza overflow (ex: 90 segundos → 1:30)
+  s = Math.max(0, Math.min(s, 59));
+  m = Math.max(0, Math.min(m, 59));
+  h = Math.max(0, h);
+
+  return `${pad(h)}:${pad(m)}:${pad(s)}`;
+}
+
+function syncInput(inp, seconds) {
+  inp.value = fmt(seconds);
+}
+
+function setupTimeInput(inp) {
+  inp.addEventListener('focus', () => inp.select());
+
+  inp.addEventListener('blur', () => {
+    inp.value = normalizeTimeValue(inp.value);
+    onTimeChanged(inp);
+  });
+
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      inp.value = normalizeTimeValue(inp.value);
+      onTimeChanged(inp);
+      inp.blur();
+    }
+  });
+}
+
+// Alias para manter compatibilidade com o código de timeline/preset
+function syncDigits(inp, seconds) { syncInput(inp, seconds); }
+function renderDigits(inp) { /* no-op — valor já está no DOM */ }
+
+function onTimeChanged(inp) {
+  const sec = parseFmt(inp.value);
+  if (inp === startInp) {
+    startSec = Math.max(0, Math.min(sec, endSec - 0.1));
+    if (vid) vid.currentTime = startSec;
+  } else {
+    endSec = Math.min(Math.max(sec, startSec + 0.1), duration);
+  }
+  updateTimeline();
+}
+
+setupTimeInput(startInp);
+setupTimeInput(endInp);
+
+// ─── Timeline ─────────────────────────────────────────────────────────────────
+function updateTimeline() {
+  if (!duration) return;
+  const s = startSec / duration * 100;
+  const e = endSec   / duration * 100;
+  tlSel.style.left  = s + '%';
+  tlSel.style.width = (e - s) + '%';
+  tlStart.style.left = s + '%';
+  tlEnd.style.left   = e + '%';
+}
+
+let dragging = null;
+tlStart.addEventListener('mousedown', e => { dragging = 'start'; e.preventDefault(); });
+tlEnd.addEventListener('mousedown',   e => { dragging = 'end';   e.preventDefault(); });
+
+timeline.addEventListener('click', e => {
+  if (dragging) return;
+  const r = timeline.getBoundingClientRect();
+  const t = (e.clientX - r.left) / r.width * duration;
+  if (vid) vid.currentTime = Math.max(0, Math.min(t, duration));
+});
+
+document.addEventListener('mousemove', e => {
+  if (!dragging || !duration) return;
+  const r = timeline.getBoundingClientRect();
+  const pct = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+  const t = pct * duration;
+  if (dragging === 'start') {
+    startSec = Math.min(t, endSec - 1);
+    syncDigits(startInp, startSec);
+    renderDigits(startInp);
+  } else {
+    endSec = Math.max(t, startSec + 1);
+    syncDigits(endInp, endSec);
+    renderDigits(endInp);
+  }
+  updateTimeline();
+});
+
+document.addEventListener('mouseup', () => { dragging = null; });
+
+// ─── Presets ─────────────────────────────────────────────────────────────────
+function setPreset(lastSeconds, from, to) {
+  if (!duration) return;
+  if (lastSeconds > 0) {
+    endSec   = duration;
+    startSec = Math.max(0, duration - lastSeconds);
+  } else {
+    startSec = from || 0;
+    endSec   = to   || duration;
+  }
+  syncDigits(startInp, startSec);
+  syncDigits(endInp,   endSec);
+  renderDigits(startInp);
+  renderDigits(endInp);
+  if (vid) vid.currentTime = startSec;
+  updateTimeline();
+}
+
+// ─── Tabs ─────────────────────────────────────────────────────────────────────
+function switchTab(event, id) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  document.getElementById('tab-' + id).classList.add('active');
+  if (id === 'crop' && vid) setTimeout(initCropCanvas, 80);
+}
+
+// ─── Capture current frame ────────────────────────────────────────────────────
+function captureFrame() {
+  if (!vid) return;
+  const c = document.createElement('canvas');
+  c.width  = vid.videoWidth;
+  c.height = vid.videoHeight;
+  c.getContext('2d').drawImage(vid, 0, 0);
+  const a = document.createElement('a');
+  a.download = `quadro_${fmt(vid.currentTime).replace(/:/g,'-')}.png`;
+  a.href = c.toDataURL('image/png');
+  a.click();
+}
+
+// ─── FFmpeg loader ────────────────────────────────────────────────────────────
+// Carrega FFmpeg uma única vez. Mostra barra animada durante download.
+async function ensureFFmpeg(textEl, barEl) {
+  if (ffmpegLoaded) return;
+
+  // SharedArrayBuffer é obrigatório para FFmpeg.wasm funcionar
+  if (typeof SharedArrayBuffer === 'undefined') {
+    const msg = '❌ Seu navegador não suporta SharedArrayBuffer.\n\nNo Chrome/Edge: acesse via HTTPS (não HTTP). No Firefox: ative em about:config. No Safari: não é suportado.\n\nSe estiver no mobile, tente o Chrome atualizado.';
+    alert(msg);
+    throw new Error('SharedArrayBuffer não disponível neste navegador.');
+  }
+
+  if (!ffmpeg) ffmpeg = new FFmpeg();
+
+  if (textEl) textEl.innerHTML = '⬇️ Baixando FFmpeg (~20MB, só na 1ª vez)…';
+  if (barEl)  barEl.style.width = '0%';
+
+  // Barra animada — FFmpeg.load não emite progresso de download
+  let fakeP = 0;
+  const timer = setInterval(() => {
+    fakeP = Math.min(fakeP + 1.2 + Math.random() * 0.8, 90);
+    if (barEl) barEl.style.width = fakeP.toFixed(1) + '%';
+    const rem = Math.max(1, Math.round((90 - fakeP) / 1.2 * 0.4));
+    if (textEl) textEl.innerHTML =
+      `⬇️ Baixando FFmpeg… ${fakeP.toFixed(0)}% (aprox. ${rem}s restantes)`;
+  }, 400);
+
+  try {
+    await ffmpeg.load({ coreURL: '/ffmpeg-core.js', wasmURL: '/ffmpeg-core.wasm' });
+  } finally {
+    clearInterval(timer);
+  }
+
+  if (barEl)  barEl.style.width = '100%';
+  if (textEl) textEl.innerHTML  = '✅ FFmpeg pronto!';
+  ffmpegLoaded = true;
+}
+
+// Registra listener de progresso baseado no log do FFmpeg (time=HH:MM:SS.ms)
+// Mais confiável que o evento 'progress' que depende de duração detectada.
+function attachProgress(totalSec, barEl, pctEl, textEl, label) {
+  // Remove listener anterior se existir
+  if (ffmpeg._progressHandler) {
+    try { ffmpeg.off('log', ffmpeg._progressHandler); } catch(e) {}
+  }
+  ffmpeg._progressHandler = ({ message }) => {
+    // Parseia "time=00:04:28.50" do stderr do FFmpeg
+    const m = message.match(/time=(\d+):(\d+):(\d+)\.(\d+)/);
+    if (m) {
+      const cur = parseInt(m[1])*3600 + parseInt(m[2])*60 + parseInt(m[3]);
+      const pct = totalSec > 0 ? Math.min(99, Math.round(cur / totalSec * 100)) : 0;
+      if (barEl) barEl.style.width = pct + '%';
+      if (pctEl) pctEl.textContent = pct + '%';
+      if (textEl) textEl.textContent = `${label} — ${fmt(cur)} / ${fmt(totalSec)}`;
+    }
+  };
+  ffmpeg.on('log', ffmpeg._progressHandler);
+}
+
+// ─── Process cut ─────────────────────────────────────────────────────────────
+async function processVideo() {
+  if (!file) return alert('Selecione um vídeo primeiro!');
+
+  const start = parseFmt(startInp.value);
+  const end   = parseFmt(endInp.value) || duration;
+  const dur   = end - start;
+  if (dur <= 0) return alert('Tempo final deve ser maior que o inicial.');
+
+  const progWrap = document.getElementById('cut-progress');
+  const progBar  = document.getElementById('cut-prog-bar');
+  const progPct  = document.getElementById('cut-prog-pct');
+  const progText = document.getElementById('cut-prog-text');
+  const dlBox    = document.getElementById('cut-download');
+  const dlBtn    = document.getElementById('cut-dl-btn');
+  const logBox   = document.getElementById('cut-log');
+
+  processBtn.disabled = true;
+  progWrap.classList.remove('hidden');
+  dlBox.classList.add('hidden');
+  logBox.innerHTML = '';
+
+  try {
+    await ensureFFmpeg(progText, progBar);
+
+    progText.textContent = 'Carregando arquivo no processador…';
+    progBar.style.width = '5%';
+    const data = fileBuffer || await file.arrayBuffer();
+    await ffmpeg.writeFile('input.mp4', new Uint8Array(data));
+    progBar.style.width = '10%';
+
+    const rotation = document.getElementById('rotation').value;
+    let args = ['-ss', String(start), '-i', 'input.mp4', '-t', String(dur)];
+    if (rotation) {
+      args.push('-vf', `transpose=${rotation}`, '-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'copy');
+    } else {
+      args.push('-c', 'copy');
+    }
+    args.push('-movflags', '+faststart', 'output.mp4');
+
+    attachProgress(dur, progBar, progPct, progText, `Cortando ${fmt(start)} → ${fmt(end)}`);
+    await ffmpeg.exec(args);
+
+    const out  = await ffmpeg.readFile('output.mp4');
+    const blob = new Blob([out.buffer], { type: 'video/mp4' });
+    dlBtn.href     = URL.createObjectURL(blob);
+    dlBtn.download = `corte_${fmt(start).replace(/:/g,'-')}_${fmt(end).replace(/:/g,'-')}.mp4`;
+    progBar.style.width = '100%';
+    progPct.textContent = '100%';
+    dlBox.classList.remove('hidden');
+    progText.textContent = '✅ Pronto! Clique no botão acima para baixar.';
+
+  } catch (err) {
+    console.error(err);
+    progText.textContent = '❌ Erro: ' + (err?.message || String(err));
+    progBar.style.width = '0%';
+  } finally {
+    processBtn.disabled = false;
+  }
+}
+
+// ─── Crop / area selection ────────────────────────────────────────────────────
+const cropCanvas = document.getElementById('crop-canvas');
+const cropOverlay = document.getElementById('crop-overlay');
+const cropContainer = document.getElementById('crop-container');
+
+function initCropCanvas() {
+  if (!vid || !cropCanvas) return;
+  const maxW = Math.min(820, cropContainer.clientWidth || 820);
+  cropScale  = maxW / vid.videoWidth;
+  cropCanvas.width  = Math.floor(vid.videoWidth  * cropScale);
+  cropCanvas.height = Math.floor(vid.videoHeight * cropScale);
+  drawCropFrame();
+  clearCrop();
+}
+
+function drawCropFrame() {
+  if (!vid || !cropCanvas) return;
+  cropCanvas.getContext('2d').drawImage(vid, 0, 0, cropCanvas.width, cropCanvas.height);
+}
+
+vid?.addEventListener('timeupdate', drawCropFrame);
+vid?.addEventListener('seeked',     drawCropFrame);
+
+cropCanvas.addEventListener('mousedown', e => {
+  if (!vid) return;
+  const r = cropCanvas.getBoundingClientRect();
+  cropStartX = e.clientX - r.left;
+  cropStartY = e.clientY - r.top;
+  cropping = true;
+  cropOverlay.style.display = 'block';
+});
+
+cropCanvas.addEventListener('mousemove', e => {
+  if (!cropping) return;
+  const r = cropCanvas.getBoundingClientRect();
+  cropEndX = e.clientX - r.left;
+  cropEndY = e.clientY - r.top;
+  const l = Math.min(cropStartX, cropEndX);
+  const t = Math.min(cropStartY, cropEndY);
+  const w = Math.abs(cropEndX - cropStartX);
+  const h = Math.abs(cropEndY - cropStartY);
+  cropOverlay.style.cssText = `left:${l}px;top:${t}px;width:${w}px;height:${h}px;display:block;`;
+});
+
+cropCanvas.addEventListener('mouseup', () => {
+  cropping = false;
+  const w = Math.abs(cropEndX - cropStartX);
+  const h = Math.abs(cropEndY - cropStartY);
+  if (w > 10 && h > 10) {
+    hasCrop = true;
+    document.getElementById('crop-dl-btn').disabled  = false;
+    document.getElementById('crop-vid-btn').disabled = false;
+  }
+});
+
+// Touch support for crop
+cropCanvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const t = e.touches[0];
+  cropCanvas.dispatchEvent(new MouseEvent('mousedown', { clientX: t.clientX, clientY: t.clientY }));
+});
+cropCanvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  const t = e.touches[0];
+  cropCanvas.dispatchEvent(new MouseEvent('mousemove', { clientX: t.clientX, clientY: t.clientY }));
+});
+cropCanvas.addEventListener('touchend', () => cropCanvas.dispatchEvent(new MouseEvent('mouseup')));
+
+function clearCrop() {
+  hasCrop = false;
+  cropOverlay.style.display = 'none';
+  document.getElementById('crop-dl-btn').disabled  = true;
+  document.getElementById('crop-vid-btn').disabled = true;
+  document.getElementById('crop-progress').classList.add('hidden');
+  document.getElementById('crop-download').classList.add('hidden');
+}
+
+function downloadCrop() {
+  if (!hasCrop || !vid) return;
+  const l = Math.min(cropStartX, cropEndX);
+  const t = Math.min(cropStartY, cropEndY);
+  const w = Math.abs(cropEndX - cropStartX);
+  const h = Math.abs(cropEndY - cropStartY);
+  const c = document.createElement('canvas');
+  c.width  = Math.round(w / cropScale);
+  c.height = Math.round(h / cropScale);
+  c.getContext('2d').drawImage(vid,
+    l / cropScale, t / cropScale, c.width, c.height,
+    0, 0, c.width, c.height);
+  const a = document.createElement('a');
+  a.download = `recorte_${fmt(vid.currentTime).replace(/:/g,'-')}_${c.width}x${c.height}.png`;
+  a.href = c.toDataURL('image/png');
+  a.click();
+}
+
+async function cropVideo() {
+  if (!file || !hasCrop) return;
+  const l = Math.round(Math.min(cropStartX, cropEndX) / cropScale);
+  const t = Math.round(Math.min(cropStartY, cropEndY) / cropScale);
+  const w = Math.round(Math.abs(cropEndX - cropStartX) / cropScale);
+  const h = Math.round(Math.abs(cropEndY - cropStartY) / cropScale);
+
+  const progWrap = document.getElementById('crop-progress');
+  const progBar  = document.getElementById('crop-prog-bar');
+  const progPct  = document.getElementById('crop-prog-pct');
+  const progText = document.getElementById('crop-prog-text');
+  const dlBox    = document.getElementById('crop-download');
+  const dlBtn    = document.getElementById('crop-vid-dl');
+
+  document.getElementById('crop-vid-btn').disabled = true;
+  progWrap.classList.remove('hidden');
+  dlBox.classList.add('hidden');
+
+  try {
+    await ensureFFmpeg(progText, progBar);
+
+    progText.textContent = 'Carregando arquivo no processador…';
+    progBar.style.width = '5%';
+    const data = fileBuffer || await file.arrayBuffer();
+    await ffmpeg.writeFile('input.mp4', new Uint8Array(data));
+    progBar.style.width = '10%';
+
+    attachProgress(duration, progBar, progPct, progText,
+      `Recortando área ${w}x${h}`);
+
+    await ffmpeg.exec([
+      '-i', 'input.mp4',
+      '-vf', `crop=${w}:${h}:${l}:${t}`,
+      '-c:v', 'libx264', '-preset', 'ultrafast',
+      '-c:a', 'copy', '-movflags', '+faststart',
+      'output.mp4'
+    ]);
+
+    const out = await ffmpeg.readFile('output.mp4');
+    dlBtn.href     = URL.createObjectURL(new Blob([out.buffer], { type: 'video/mp4' }));
+    dlBtn.download = `area_${w}x${h}.mp4`;
+    progBar.style.width = '100%';
+    progPct.textContent = '100%';
+    dlBox.classList.remove('hidden');
+    progText.textContent = '✅ Pronto! Clique no botão acima para baixar.';
+  } catch (err) {
+    console.error(err);
+    progText.textContent = '❌ Erro: ' + (err?.message || String(err));
+    progBar.style.width = '0%';
+  } finally {
+    document.getElementById('crop-vid-btn').disabled = false;
+  }
+}
+
+// ─── Video controls ───────────────────────────────────────────────────────────
+function seekVideo(s)   { if (vid) vid.currentTime = Math.max(0, Math.min(duration, vid.currentTime + s)); }
+function stepFrame(dir) { seekVideo(dir / 30); }
+function togglePlay()   { if (vid) vid.paused ? vid.play() : vid.pause(); }
+
+// ─── Extract frames ───────────────────────────────────────────────────────────
+async function extractFrames() {
+  if (!vid) return alert('Selecione um vídeo primeiro!');
+  const fps   = parseFloat(document.getElementById('fps-val').value) || 1;
+  const start = parseFloat(document.getElementById('frames-start').value) || 0;
+  const dur   = parseFloat(document.getElementById('frames-dur').value);
+  const end   = dur > 0 ? Math.min(start + dur, duration) : duration;
+
+  const btn = document.getElementById('extract-btn');
+  btn.disabled = true; btn.textContent = 'Gerando…';
+
+  const grid = document.getElementById('frame-grid');
+  grid.innerHTML = ''; extractedFrames = [];
+
+  const c = document.createElement('canvas');
+  c.width = vid.videoWidth; c.height = vid.videoHeight;
+  const ctx = c.getContext('2d');
+
+  const interval = 1 / fps;
+  for (let t = start; t < end; t += interval) {
+    vid.currentTime = t;
+    await new Promise(r => vid.addEventListener('seeked', r, { once: true }));
+    ctx.drawImage(vid, 0, 0);
+    const dataUrl = c.toDataURL('image/jpeg', 0.85);
+
+    const item = document.createElement('div');
+    item.className = 'frame-item';
+    item.innerHTML = `<img src="${dataUrl}"><div class="frame-label">${fmt(t)}</div>`;
+    item.onclick = () => {
+      const a = document.createElement('a');
+      a.download = `quadro_${fmt(t).replace(/:/g,'-')}.jpg`;
+      a.href = dataUrl; a.click();
+    };
+    grid.appendChild(item);
+    extractedFrames.push({ t, dataUrl });
+  }
+
+  document.getElementById('frames-result').classList.remove('hidden');
+  btn.disabled = false; btn.textContent = 'Gerar Quadros';
+}
+
+function downloadAllFrames() {
+  extractedFrames.forEach(({ t, dataUrl }, i) => {
+    setTimeout(() => {
+      const a = document.createElement('a');
+      a.download = `quadro_${fmt(t).replace(/:/g,'-')}.jpg`;
+      a.href = dataUrl; a.click();
+    }, i * 250);
+  });
+}
+
+// ─── Motion detection ────────────────────────────────────────────────────────
+let motionEvents   = [];
+let motionRunning  = false;
+let motTabInited   = false;
+
+const MOT_CFG = {
+  low:  { sampleInterval: 0.5, diffThreshold: 35, motionPixelPct: 0.008, gapMs: 3000, minDurationMs: 500 },
+  mid:  { sampleInterval: 0.5, diffThreshold: 25, motionPixelPct: 0.003, gapMs: 2000, minDurationMs: 300 },
+  high: { sampleInterval: 0.5, diffThreshold: 15, motionPixelPct: 0.001, gapMs: 1500, minDurationMs: 200 },
+};
+
+function initMotionTab() {
+  if (motTabInited) return;
+  motTabInited = true;
+  // Sync playhead with main player
+  if (vid) {
+    vid.addEventListener('timeupdate', syncMotPlayhead);
+  }
+}
+
+function syncMotPlayhead() {
+  const ph = document.getElementById('mot-playhead');
+  if (!ph || !duration) return;
+  ph.style.left = (vid.currentTime / duration * 100) + '%';
+}
+
+async function runMotionDetection() {
+  if (!vid || !duration) return;
+  if (motionRunning) return;
+  motionRunning = true;
+
+  const sens = document.getElementById('mot-sensitivity').value;
+  const cfg  = MOT_CFG[sens] || MOT_CFG.mid;
+
+  const progWrap  = document.getElementById('mot-progress');
+  const progBar   = document.getElementById('mot-prog-bar');
+  const progPct   = document.getElementById('mot-prog-pct');
+  const progLabel = document.getElementById('mot-prog-label');
+  const results   = document.getElementById('mot-results');
+  const emptyEl   = document.getElementById('mot-empty');
+
+  progWrap.classList.remove('hidden');
+  results.classList.add('hidden');
+  emptyEl.classList.add('hidden');
+  document.getElementById('mot-start-btn').disabled = true;
+
+  // Offscreen video for seeking (leaves main player free)
+  const offVid = document.createElement('video');
+  offVid.src   = vid.src || vid.currentSrc;
+  offVid.muted = true;
+  await new Promise(r => {
+    if (offVid.readyState >= 1) { r(); return; }
+    offVid.addEventListener('loadedmetadata', r, { once: true });
+    offVid.load();
+  });
+
+  const W = offVid.videoWidth  || 640;
+  const H = offVid.videoHeight || 360;
+  const scale = Math.min(1, 320 / W);
+  const cw = Math.round(W * scale);
+  const ch = Math.round(H * scale);
+
+  const offCanvas = document.createElement('canvas');
+  offCanvas.width = cw; offCanvas.height = ch;
+  const offCtx = offCanvas.getContext('2d', { willReadFrequently: true });
+
+  const totalFrames = Math.floor(duration / cfg.sampleInterval);
+  let prevData = null;
+  const motionFrames = [];
+
+  for (let i = 0; i <= totalFrames; i++) {
+    const t = i * cfg.sampleInterval;
+    if (t > duration) break;
+
+    await motSeekTo(offVid, t);
+    offCtx.drawImage(offVid, 0, 0, cw, ch);
+    const imgData = offCtx.getImageData(0, 0, cw, ch).data;
+
+    if (prevData) {
+      const score = motPixelDiff(imgData, prevData, cw * ch, cfg.diffThreshold);
+      if (score > cfg.motionPixelPct) {
+        motionFrames.push({ tMs: Math.round(t * 1000), score });
+      }
+    }
+    prevData = new Uint8ClampedArray(imgData);
+
+    if (i % 25 === 0) {
+      const pct = Math.min(99, Math.round(i / totalFrames * 100));
+      progBar.style.width = pct + '%';
+      progPct.textContent = pct + '%';
+      progLabel.textContent = `Analisando… ${motFmt(t)} de ${motFmt(duration)}`;
+      await new Promise(r => setTimeout(r, 0));
+    }
+  }
+
+  motionEvents = motGroupEvents(motionFrames, cfg);
+  progWrap.classList.add('hidden');
+  document.getElementById('mot-start-btn').disabled = false;
+  motionRunning = false;
+
+  if (!motionEvents.length) {
+    emptyEl.classList.remove('hidden');
+    return;
+  }
+
+  document.getElementById('mot-count').textContent =
+    `${motionEvents.length} evento${motionEvents.length !== 1 ? 's' : ''} detectado${motionEvents.length !== 1 ? 's' : ''}`;
+
+  results.classList.remove('hidden');
+  renderMotTimeline();
+  renderMotEventList();
+
+  // Capture thumbs in background (won't block UI)
+  motCaptureThumbs(offVid, offCanvas, offCtx, cw, ch);
+}
+
+function motPixelDiff(a, b, pixelCount, threshold) {
+  let changed = 0;
+  for (let i = 0; i < a.length; i += 4) {
+    if ((Math.abs(a[i] - b[i]) + Math.abs(a[i+1] - b[i+1]) + Math.abs(a[i+2] - b[i+2])) / 3 > threshold) changed++;
+  }
+  return changed / pixelCount;
+}
+
+function motGroupEvents(frames, cfg) {
+  if (!frames.length) return [];
+  const evs = [];
+  let cur = { start: frames[0].tMs, end: frames[0].tMs, peak: frames[0].score, count: 1 };
+  for (let i = 1; i < frames.length; i++) {
+    const f = frames[i];
+    if (f.tMs - cur.end <= cfg.gapMs) {
+      cur.end = f.tMs;
+      if (f.score > cur.peak) cur.peak = f.score;
+      cur.count++;
+    } else {
+      if (cur.end - cur.start >= cfg.minDurationMs) evs.push({ ...cur });
+      cur = { start: f.tMs, end: f.tMs, peak: f.score, count: 1 };
+    }
+  }
+  if (cur.end - cur.start >= cfg.minDurationMs) evs.push(cur);
+  return evs.map((e, i) => ({ idx: i, startMs: e.start, endMs: e.end, peakScore: e.peak, thumb: null }));
+}
+
+function renderMotTimeline() {
+  const tl = document.getElementById('mot-timeline');
+  tl.querySelectorAll('.mot-marker').forEach(el => el.remove());
+  motionEvents.forEach((ev, i) => {
+    const leftPct  = (ev.startMs / 1000 / duration) * 100;
+    const widthPct = Math.max(0.4, ((ev.endMs - ev.startMs) / 1000 / duration) * 100);
+    const m = document.createElement('div');
+    m.className = 'mot-marker';
+    m.style.left  = leftPct + '%';
+    m.style.width = widthPct + '%';
+    m.title = `Evento ${i+1} — ${motFmt(ev.startMs/1000)}`;
+    m.addEventListener('click', () => motGoTo(i));
+    tl.appendChild(m);
+  });
+  // Click on timeline → seek
+  const tl2 = document.getElementById('mot-timeline');
+  tl2.onclick = e => {
+    if (e.target.classList.contains('mot-marker')) return;
+    const r = tl2.getBoundingClientRect();
+    const t = (e.clientX - r.left) / r.width * duration;
+    if (vid) vid.currentTime = Math.max(0, Math.min(t, duration));
+  };
+}
+
+function renderMotEventList() {
+  const list = document.getElementById('mot-event-list');
+  list.innerHTML = '';
+  motionEvents.forEach((ev, i) => {
+    const dur = ((ev.endMs - ev.startMs) / 1000).toFixed(1);
+    const card = document.createElement('div');
+    card.className = 'mot-card';
+    card.dataset.idx = i;
+    card.innerHTML = `
+      <div class="mot-thumb-ph" id="mot-ph-${i}">…</div>
+      <div class="mot-info">
+        <div class="mot-title">Evento #${i+1}</div>
+        <div class="mot-time">${motFmt(ev.startMs/1000)} → ${motFmt(ev.endMs/1000)} (${dur}s)</div>
+      </div>
+      <div class="mot-score">${(ev.peakScore*100).toFixed(1)}%</div>
+      <button class="mot-cut-btn" title="Enviar para aba Cortar">✂️ Cortar</button>
+    `;
+    card.querySelector('.mot-cut-btn').addEventListener('click', e => {
+      e.stopPropagation();
+      motSendToCut(i);
+    });
+    card.addEventListener('click', () => motGoTo(i));
+    list.appendChild(card);
+  });
+}
+
+async function motCaptureThumbs(offVid, offCanvas, offCtx, cw, ch) {
+  // Resize canvas for thumbs
+  offCanvas.width = 128;
+  offCanvas.height = Math.round(128 * (ch / cw));
+  const tw = offCanvas.width, th = offCanvas.height;
+
+  for (let i = 0; i < motionEvents.length; i++) {
+    const ev = motionEvents[i];
+    await motSeekTo(offVid, ev.startMs / 1000);
+    offCtx.drawImage(offVid, 0, 0, tw, th);
+    ev.thumb = offCanvas.toDataURL('image/jpeg', 0.7);
+
+    const ph = document.getElementById(`mot-ph-${i}`);
+    if (ph) {
+      const img = document.createElement('img');
+      img.className = 'mot-thumb';
+      img.src = ev.thumb;
+      ph.replaceWith(img);
+    }
+    document.querySelectorAll('.mot-marker')[i]?.style && (
+      document.querySelectorAll('.mot-marker')[i].style.background = '#f59e0b'
+    );
+  }
+}
+
+function motGoTo(idx) {
+  const ev = motionEvents[idx];
+  if (!ev || !vid) return;
+  vid.currentTime = ev.startMs / 1000;
+  vid.play();
+  document.querySelectorAll('.mot-card').forEach((c, i) => c.classList.toggle('active', i === idx));
+  document.querySelectorAll('.mot-marker').forEach((m, i) => m.classList.toggle('active', i === idx));
+  const card = document.querySelector(`.mot-card[data-idx="${idx}"]`);
+  if (card) card.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+function motSendToCut(idx) {
+  const ev = motionEvents[idx];
+  if (!ev || !duration) return;
+  // Add 2s padding each side
+  const padStart = Math.max(0, ev.startMs / 1000 - 2);
+  const padEnd   = Math.min(duration, ev.endMs / 1000 + 2);
+  startSec = padStart;
+  endSec   = padEnd;
+  syncDigits(startInp, startSec);
+  syncDigits(endInp,   endSec);
+  updateTimeline();
+  if (vid) vid.currentTime = padStart;
+  // Switch to cut tab
+  const cutBtn = document.querySelector('.tab-btn');  // first tab = cut
+  cutBtn?.click();
+}
+
+function motSeekTo(v, t) {
+  return new Promise(resolve => {
+    const onSeeked = () => { v.removeEventListener('seeked', onSeeked); resolve(); };
+    v.addEventListener('seeked', onSeeked);
+    v.currentTime = t;
+  });
+}
+
+function motFmt(sec) {
+  const s = Math.floor(sec);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const ss = s % 60;
+  if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+  return `${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+}
+
+// ─── Keyboard shortcuts ───────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (!vid) return;
+  const tag = document.activeElement?.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+  if (e.key === ' ')           { e.preventDefault(); togglePlay(); }
+  if (e.key === 'ArrowLeft')   { e.preventDefault(); stepFrame(-1); }
+  if (e.key === 'ArrowRight')  { e.preventDefault(); stepFrame(1); }
+  if (e.key === ',')           { seekVideo(-5); }
+  if (e.key === '.')           { seekVideo(5); }
+});
+</script>
+</body>
+</html>
