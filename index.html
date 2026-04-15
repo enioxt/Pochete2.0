@@ -744,28 +744,47 @@ const timeline  = document.getElementById('timeline');
 function applyRotationPreview(val) {
   const badge = document.getElementById('rotation-badge');
   if (!vid) return;
-  const vw = vid.videoWidth || 1, vh = vid.videoHeight || 1;
-  if (val === '1') {
-    const s = Math.min(vh / vw, vw / vh);
-    vidEl.style.transform = `rotate(90deg) scale(${s.toFixed(3)})`;
-    badge.classList.add('visible');
-  } else if (val === '2') {
-    const s = Math.min(vh / vw, vw / vh);
-    vidEl.style.transform = `rotate(-90deg) scale(${s.toFixed(3)})`;
-    badge.classList.add('visible');
-  } else if (val === '0') {
+
+  // Always reset inline size first so CSS defaults (width:100%, height:100%) take over
+  vidEl.style.width     = '';
+  vidEl.style.height    = '';
+  vidEl.style.transform = '';
+  badge.classList.remove('visible');
+
+  if (!val || val === '') return;
+
+  if (val === '0') {                         // 180° — no AR swap needed
     vidEl.style.transform = 'rotate(180deg)';
     badge.classList.add('visible');
-  } else {
-    vidEl.style.transform = 'none';
-    badge.classList.remove('visible');
+    return;
+  }
+
+  if (val === '1' || val === '2') {          // 90° or 270° — need AR swap
+    const vw = vid.videoWidth  || 1;
+    const vh = vid.videoHeight || 1;
+    const wrap = vidEl.parentElement;
+    const cw   = wrap.clientWidth  || 860;  // container width
+    const ch   = wrap.clientHeight || 420;  // container height (fixed in CSS)
+
+    // After rotate(90°), element appears as  dh × dw  (visual W = dh, visual H = dw).
+    // Constraints: dh ≤ cw  AND  dw ≤ ch
+    // Set element AR = video AR (vw/vh) so object-fit:contain fills with no black bars.
+    //   dw / dh = vw / vh  →  dh = dw * vh/vw
+    //   max dw: min(ch, cw * vw/vh)
+    const dw = Math.min(ch, cw * vw / vh);
+    const dh = dw * vh / vw;
+
+    vidEl.style.width     = Math.round(dw) + 'px';
+    vidEl.style.height    = Math.round(dh) + 'px';
+    vidEl.style.transform = val === '1' ? 'rotate(90deg)' : 'rotate(-90deg)';
+    badge.classList.add('visible');
   }
 }
 
 // ─── Reset file ───────────────────────────────────────────────────────────────
 function resetFile() {
   file = null; fileBuffer = null; vid = null; duration = 0;
-  vidEl.src = ''; vidEl.style.transform = 'none';
+  vidEl.src = ''; vidEl.style.transform = ''; vidEl.style.width = ''; vidEl.style.height = '';
   vidSec.style.display = 'none';
   document.getElementById('file-info').style.display = 'none';
   document.getElementById('load-status').style.display = 'none';
