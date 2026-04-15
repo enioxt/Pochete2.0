@@ -389,34 +389,6 @@
   }
   .crop-actions { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
 
-  /* Frame grid */
-  .frame-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-    gap: 8px;
-    max-height: 360px;
-    overflow-y: auto;
-    margin-top: 12px;
-  }
-  .frame-item {
-    position: relative;
-    border-radius: 5px;
-    overflow: hidden;
-    cursor: pointer;
-    border: 2px solid transparent;
-  }
-  .frame-item:hover { border-color: #3b82f6; }
-  .frame-item img { display: block; width: 100%; height: auto; }
-  .frame-label {
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    background: rgba(0,0,0,.75);
-    color: #fff;
-    font-family: monospace;
-    font-size: 10px;
-    padding: 3px 5px;
-  }
-
   /* Crop controls */
   .crop-nav { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
   .btn-nav {
@@ -551,7 +523,6 @@
     <div class="tabs">
       <button class="tab-btn active" onclick="switchTab(event,'cut')">✂️ Cortar Vídeo</button>
       <button class="tab-btn" onclick="switchTab(event,'crop')">🖼️ Recortar Área</button>
-      <button class="tab-btn" onclick="switchTab(event,'frames')">🎞️ Extrair Quadros</button>
       <button class="tab-btn" id="mot-tab-btn" onclick="switchTab(event,'motion');initMotionTab()">🎯 Detectar Movimento</button>
     </div>
 
@@ -658,36 +629,6 @@
       </div>
     </div>
 
-    <!-- TAB: Extrair Quadros -->
-    <div id="tab-frames" class="tab-pane">
-      <div class="card">
-        <div class="card-title">Extrair Quadros como Imagens</div>
-        <div class="row">
-          <div class="field">
-            <label>Quadros por segundo</label>
-            <input type="number" id="fps-val" class="input" value="1" min="0.1" max="30" step="0.1">
-          </div>
-          <div class="field">
-            <label>Início (segundos)</label>
-            <input type="number" id="frames-start" class="input" value="0" min="0">
-          </div>
-          <div class="field">
-            <label>Duração (segundos, 0=tudo)</label>
-            <input type="number" id="frames-dur" class="input" value="30" min="1">
-          </div>
-        </div>
-        <button id="extract-btn" class="btn btn-primary btn-block" onclick="extractFrames()">
-          Gerar Quadros
-        </button>
-        <div id="frames-result" class="hidden">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;">
-            <span style="color:#666;font-size:12px;">Clique num quadro para baixar</span>
-            <button class="btn-nav" onclick="downloadAllFrames()">⬇️ Baixar Todos</button>
-          </div>
-          <div class="frame-grid" id="frame-grid"></div>
-        </div>
-      </div>
-    </div>
 
     <!-- TAB: Detectar Movimento -->
     <div id="tab-motion" class="tab-pane">
@@ -755,7 +696,6 @@ let vid = null;        // the <video> element
 let duration = 0;
 let startSec = 0;
 let endSec = 0;
-let extractedFrames = [];
 
 // Crop state
 let cropScale = 1;
@@ -1340,55 +1280,6 @@ function stepFrame(dir) { seekVideo(dir / 30); }
 function togglePlay()   { if (vid) vid.paused ? vid.play() : vid.pause(); }
 
 // ─── Extract frames ───────────────────────────────────────────────────────────
-async function extractFrames() {
-  if (!vid) return alert('Selecione um vídeo primeiro!');
-  const fps   = parseFloat(document.getElementById('fps-val').value) || 1;
-  const start = parseFloat(document.getElementById('frames-start').value) || 0;
-  const dur   = parseFloat(document.getElementById('frames-dur').value);
-  const end   = dur > 0 ? Math.min(start + dur, duration) : duration;
-
-  const btn = document.getElementById('extract-btn');
-  btn.disabled = true; btn.textContent = 'Gerando…';
-
-  const grid = document.getElementById('frame-grid');
-  grid.innerHTML = ''; extractedFrames = [];
-
-  const c = document.createElement('canvas');
-  c.width = vid.videoWidth; c.height = vid.videoHeight;
-  const ctx = c.getContext('2d');
-
-  const interval = 1 / fps;
-  for (let t = start; t < end; t += interval) {
-    vid.currentTime = t;
-    await new Promise(r => vid.addEventListener('seeked', r, { once: true }));
-    ctx.drawImage(vid, 0, 0);
-    const dataUrl = c.toDataURL('image/jpeg', 0.85);
-
-    const item = document.createElement('div');
-    item.className = 'frame-item';
-    item.innerHTML = `<img src="${dataUrl}"><div class="frame-label">${fmt(t)}</div>`;
-    item.onclick = () => {
-      const a = document.createElement('a');
-      a.download = `quadro_${fmt(t).replace(/:/g,'-')}.jpg`;
-      a.href = dataUrl; a.click();
-    };
-    grid.appendChild(item);
-    extractedFrames.push({ t, dataUrl });
-  }
-
-  document.getElementById('frames-result').classList.remove('hidden');
-  btn.disabled = false; btn.textContent = 'Gerar Quadros';
-}
-
-function downloadAllFrames() {
-  extractedFrames.forEach(({ t, dataUrl }, i) => {
-    setTimeout(() => {
-      const a = document.createElement('a');
-      a.download = `quadro_${fmt(t).replace(/:/g,'-')}.jpg`;
-      a.href = dataUrl; a.click();
-    }, i * 250);
-  });
-}
 
 // ─── Motion detection ────────────────────────────────────────────────────────
 let motionEvents   = [];
